@@ -1,0 +1,15 @@
+node_modules
+.git
+.vscode
+scripts
+README.md
+Dockerfile*
+docker-compose*
+.dockerignore
+.gitignore
+LICENSE
+Makefile
+helm-charts
+.editorconfig
+.idea
+coverage*

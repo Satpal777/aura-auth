@@ -17,7 +17,7 @@ export const createServer = async () => {
     const pg = await Database.getInstance();
     const server = Bun.serve({
         development: true,
-        port: 9000,
+        port: 3000,
 
         routes: {
 
