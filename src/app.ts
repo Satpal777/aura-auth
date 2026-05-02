@@ -13,31 +13,45 @@ function toPostgresArray(arr: string[]): string {
     return '{' + arr.map(s => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"').join(',') + '}';
 }
 
+const corsHeaders: Record<string, string> = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+/** Append CORS headers to any Response. */
+function withCors(res: Response): Response {
+    for (const [k, v] of Object.entries(corsHeaders)) {
+        res.headers.set(k, v);
+    }
+    return res;
+}
+
 export const createServer = async () => {
     const pg = await Database.getInstance();
     const server = Bun.serve({
         development: true,
         port: 3000,
 
-        fetch(req) {
+        fetch(req, server) {
             if (req.method === "OPTIONS") {
-                const res = new Response("Allowed", {
-                    headers: {
-                        "Access-Control-Allow-Origin": "*",
-                        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                    },
-                });
-                return res;
+                return new Response(null, { status: 204, headers: corsHeaders });
             }
-            return new Response("Not found.", { status: 404 });
+
+            const routeResponse = server.fetch(req);
+            if (routeResponse) {
+                return routeResponse instanceof Promise
+                    ? routeResponse.then(withCors)
+                    : withCors(routeResponse);
+            }
+
+            return withCors(new Response("Not found.", { status: 404 }));
         },
 
         routes: {
 
             "/": new Response("Hello, from  Aura Auth!"),
 
-            // Serve static assets from public/assets/
             "/assets/*": async (req) => {
                 const url = new URL(req.url);
                 const filePath = `${import.meta.dir}/../public${url.pathname}`;
