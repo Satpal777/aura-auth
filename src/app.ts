@@ -19,6 +19,20 @@ export const createServer = async () => {
         development: true,
         port: 3000,
 
+        fetch(req) {
+            if (req.method === "OPTIONS") {
+                const res = new Response("Allowed", {
+                    headers: {
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                    },
+                });
+                return res;
+            }
+            return new Response("Not found.", { status: 404 });
+        },
+
         routes: {
 
             "/": new Response("Hello, from  Aura Auth!"),
@@ -399,10 +413,6 @@ export const createServer = async () => {
 
             },
 
-        },
-
-        fetch(req) {
-            return new Response("Not found.", { status: 404 });
         },
 
         error(error: any) {
