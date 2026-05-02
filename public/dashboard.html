@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard · Aura Auth</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          keyframes: {
+            spin:    { to: { transform: 'rotate(360deg)' } },
+            fadeIn:  { from: { opacity: 0, transform: 'translateY(8px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+            slideIn: { from: { opacity: 0, transform: 'translateX(-8px)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+          },
+          animation: {
+            spin:    'spin 0.7s linear infinite',
+            fadeIn:  'fadeIn 0.35s ease-out',
+            slideIn: 'slideIn 0.25s ease-out',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="h-full bg-zinc-50 dark:bg-zinc-950 font-sans antialiased text-zinc-900 dark:text-white">
+
+  <!-- Redirect if not authenticated -->
+  <script>
+    if (!localStorage.getItem('aura_token')) {
+      window.location.href = '/o/authenticate';
+    }
+  </script>
+
+  <!-- Top nav -->
+  <header class="sticky top-0 z-10 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
+    <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <img src="./assets/AA.png" alt="Aura Auth" class="w-7 h-7 rounded-lg object-contain shrink-0" />
+        <span class="font-semibold text-sm">Aura Auth</span>
+        <span class="text-zinc-400 dark:text-zinc-600 text-sm">/</span>
+        <span class="text-sm text-zinc-500 dark:text-zinc-400">Dashboard</span>
+      </div>
+      <button id="logoutBtn" class="text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition flex items-center gap-1.5">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Sign out
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 py-10 space-y-8 animate-fadeIn">
+
+    <!-- Page title -->
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Developer Console</h1>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Register your organization and manage OIDC client applications.</p>
+    </div>
+
+    <!-- ── Step 1: Organization ── -->
+    <section class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+      <div class="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold">Organization</h2>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400">Your workspace for managing OIDC clients</p>
+        </div>
+        <!-- Org badge shown after registration -->
+        <div id="orgBadge" class="ml-auto hidden items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-medium px-2.5 py-1 rounded-full ring-1 ring-emerald-200 dark:ring-emerald-800/60">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span id="orgBadgeName"></span>
+        </div>
+      </div>
+
+      <!-- Already has org -->
+      <div id="orgExisting" class="hidden px-6 py-5">
+        <div class="flex items-start gap-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+          <svg class="w-4 h-4 text-zinc-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p class="text-sm text-zinc-600 dark:text-zinc-300">You already own an organization. Scroll down to create a client application.</p>
+        </div>
+      </div>
+
+      <!-- Registration form -->
+      <div id="orgFormWrap" class="px-6 py-5">
+        <div id="orgError" class="hidden mb-4 flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl px-4 py-3">
+          <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="orgErrorText"></span>
+        </div>
+        <form id="orgForm" novalidate class="flex gap-3">
+          <div class="flex-1 space-y-1">
+            <label for="orgName" class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">Organization name</label>
+            <input id="orgName" type="text" placeholder="Acme Corp" required
+              class="w-full h-10 px-3.5 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-zinc-400 dark:placeholder-zinc-600" />
+          </div>
+          <div class="flex items-end">
+            <button type="submit" id="orgSubmitBtn"
+              class="h-10 px-4 flex items-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
+              <span id="orgSpinner" class="hidden w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span id="orgBtnText">Register</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ── Step 2: Create Client ── -->
+    <section id="clientSection" class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden opacity-50 pointer-events-none transition-all duration-300">
+      <div class="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold">Client Application</h2>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400">Register an app that will use Aura Auth for sign-in</p>
+        </div>
+      </div>
+
+      <div class="px-6 py-5 space-y-5">
+        <div id="clientError" class="hidden flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl px-4 py-3">
+          <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="clientErrorText"></span>
+        </div>
+
+        <form id="clientForm" novalidate class="space-y-4">
+
+          <div class="space-y-1.5">
+            <label for="clientName" class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">Application name</label>
+            <input id="clientName" type="text" placeholder="My Web App" required
+              class="w-full h-10 px-3.5 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-zinc-400 dark:placeholder-zinc-600" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400">Redirect URIs <span class="text-zinc-400 font-normal">(one per line)</span></label>
+            <textarea id="redirectUris" rows="3" placeholder="https://myapp.com/callback&#10;http://localhost:3000/callback" required
+              class="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-zinc-400 dark:placeholder-zinc-600 resize-none font-mono"></textarea>
+            <p class="text-xs text-zinc-400 dark:text-zinc-500">These are the only URLs Aura Auth will redirect to after authentication.</p>
+          </div>
+
+          <button type="submit" id="clientSubmitBtn"
+            class="w-full h-10 flex items-center justify-center gap-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <span id="clientSpinner" class="hidden w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <span id="clientBtnText">Create client</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ── Credentials card (shown after client creation) ── -->
+    <section id="credentialsCard" class="hidden bg-white dark:bg-zinc-900 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 overflow-hidden animate-fadeIn">
+      <div class="px-6 py-5 border-b border-emerald-100 dark:border-emerald-800/40 flex items-center gap-3 bg-emerald-50/50 dark:bg-emerald-950/20">
+        <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Client created successfully</h2>
+          <p class="text-xs text-emerald-600 dark:text-emerald-500">Save your credentials — the secret will not be shown again.</p>
+        </div>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+
+        <div class="space-y-1.5">
+          <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Client ID</label>
+          <div class="flex items-center gap-2">
+            <code id="outClientId" class="flex-1 text-sm font-mono bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-zinc-800 dark:text-zinc-200 break-all"></code>
+            <button data-copy="outClientId" class="copy-btn shrink-0 w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Client Secret <span class="normal-case font-normal text-red-500">(copy now — never shown again)</span></label>
+          <div class="flex items-center gap-2">
+            <code id="outClientSecret" class="flex-1 text-sm font-mono bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-zinc-800 dark:text-zinc-200 break-all"></code>
+            <button data-copy="outClientSecret" class="copy-btn shrink-0 w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick-start snippet -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Authorization URL</label>
+          <code id="outAuthUrl" class="block w-full text-xs font-mono bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-indigo-600 dark:text-indigo-400 break-all leading-relaxed"></code>
+        </div>
+
+        <button id="createAnotherBtn"
+          class="w-full h-9 flex items-center justify-center text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition">
+          + Create another client
+        </button>
+      </div>
+    </section>
+
+    <!-- ── Existing Clients List ── -->
+    <section id="clientsList" class="hidden bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+      <div class="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-500">
+              <path d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-sm font-semibold">Registered Clients</h2>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">Your existing OIDC applications</p>
+          </div>
+        </div>
+      </div>
+      <div id="clientsListBody" class="divide-y divide-zinc-100 dark:divide-zinc-800"></div>
+    </section>
+
+  </main>
+
+  <script>
+    const TOKEN = localStorage.getItem('aura_token');
+
+    // ── On load: fetch org + clients from DB ─────────────────────────────────
+    async function loadOrgData() {
+      try {
+        const res  = await fetch('/org/me', { headers: { 'Authorization': `Bearer ${TOKEN}` } });
+        if (res.status === 401) { localStorage.removeItem('aura_token'); window.location.href = '/o/authenticate'; return; }
+        const data = await res.json().catch(() => ({}));
+        if (data.org) {
+          applyOrgState(data.org);
+          renderClientsList(data.clients || []);
+        }
+      } catch { /* silent — form stays visible */ }
+    }
+
+    function applyOrgState(org) {
+      document.getElementById('orgFormWrap').classList.add('hidden');
+      const badge = document.getElementById('orgBadge');
+      document.getElementById('orgBadgeName').textContent = org.name;
+      badge.classList.remove('hidden');
+      badge.classList.add('flex');
+      enableClientSection();
+    }
+
+    function renderClientsList(clients) {
+      if (!clients.length) return;
+      const list = document.getElementById('clientsList');
+      const body = document.getElementById('clientsListBody');
+      body.innerHTML = clients.map(c => `
+        <div class="px-6 py-4 flex items-start gap-4">
+          <div class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center shrink-0 mt-0.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-medium">${escHtml(c.clientName)}</span>
+              <span class="text-xs px-1.5 py-0.5 rounded-full ${c.isActive ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800/40' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}">${c.isActive ? 'Active' : 'Inactive'}</span>
+            </div>
+            <div class="mt-1 flex items-center gap-2">
+              <code class="text-xs font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 px-2 py-0.5 rounded-lg border border-zinc-200 dark:border-zinc-700 truncate max-w-xs">${escHtml(c.clientId)}</code>
+              <button onclick="copyText('${escHtml(c.clientId)}', this)" class="shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+            <div class="mt-1.5 flex flex-wrap gap-1.5">
+              ${(c.redirectUris || []).map(u => `<span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 rounded-lg">${escHtml(u)}</span>`).join('')}
+            </div>
+          </div>
+        </div>`).join('');
+      list.classList.remove('hidden');
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function copyText(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        setTimeout(() => { btn.innerHTML = orig; }, 1500);
+      });
+    }
+
+    loadOrgData();
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` };
+    }
+
+    function showBanner(errorEl, textEl, msg) {
+      textEl.textContent = msg;
+      errorEl.classList.remove('hidden');
+      errorEl.classList.add('flex');
+    }
+
+    function hideBanner(errorEl) {
+      errorEl.classList.add('hidden');
+      errorEl.classList.remove('flex');
+    }
+
+    function setLoading(btn, spinner, textEl, label, on) {
+      btn.disabled = on;
+      spinner.classList.toggle('hidden', !on);
+      textEl.textContent = on ? `${label}…` : label;
+    }
+
+    // ── Enable client section ────────────────────────────────────────────────
+    function enableClientSection() {
+      const sec = document.getElementById('clientSection');
+      sec.classList.remove('opacity-50', 'pointer-events-none');
+    }
+
+    // ── Logout ───────────────────────────────────────────────────────────────
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('aura_token');
+      window.location.href = '/o/authenticate';
+    });
+
+    // ── Organization form ────────────────────────────────────────────────────
+    const orgForm       = document.getElementById('orgForm');
+    const orgSubmitBtn  = document.getElementById('orgSubmitBtn');
+    const orgSpinner    = document.getElementById('orgSpinner');
+    const orgBtnText    = document.getElementById('orgBtnText');
+    const orgError      = document.getElementById('orgError');
+    const orgErrorText  = document.getElementById('orgErrorText');
+
+    orgForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideBanner(orgError);
+
+      const name = document.getElementById('orgName').value.trim();
+      if (!name) { showBanner(orgError, orgErrorText, 'Organization name is required.'); return; }
+
+      setLoading(orgSubmitBtn, orgSpinner, orgBtnText, 'Register', true);
+      try {
+        const res  = await fetch('/org/register', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ name }) });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          // 409 = already has an org — that's fine, just enable the client section
+          if (res.status === 409) {
+            document.getElementById('orgExisting').classList.remove('hidden');
+            document.getElementById('orgFormWrap').classList.add('hidden');
+            enableClientSection();
+            return;
+          }
+          showBanner(orgError, orgErrorText, data.error || 'Something went wrong.');
+          return;
+        }
+
+        // Success
+        document.getElementById('orgFormWrap').classList.add('hidden');
+        const badge = document.getElementById('orgBadge');
+        document.getElementById('orgBadgeName').textContent = data.org?.name ?? name;
+        badge.classList.remove('hidden');
+        badge.classList.add('flex');
+        enableClientSection();
+
+      } catch {
+        showBanner(orgError, orgErrorText, 'Network error. Please try again.');
+      } finally {
+        setLoading(orgSubmitBtn, orgSpinner, orgBtnText, 'Register', false);
+      }
+    });
+
+    // ── Client form ──────────────────────────────────────────────────────────
+    const clientForm      = document.getElementById('clientForm');
+    const clientSubmitBtn = document.getElementById('clientSubmitBtn');
+    const clientSpinner   = document.getElementById('clientSpinner');
+    const clientBtnText   = document.getElementById('clientBtnText');
+    const clientError     = document.getElementById('clientError');
+    const clientErrorText = document.getElementById('clientErrorText');
+
+    clientForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideBanner(clientError);
+
+      const client_name   = document.getElementById('clientName').value.trim();
+      const rawUris       = document.getElementById('redirectUris').value.trim();
+      const redirect_uris = rawUris.split('\n').map(u => u.trim()).filter(Boolean);
+
+      if (!client_name) { showBanner(clientError, clientErrorText, 'Application name is required.'); return; }
+      if (redirect_uris.length === 0) { showBanner(clientError, clientErrorText, 'At least one redirect URI is required.'); return; }
+
+      // Basic URL validation
+      for (const uri of redirect_uris) {
+        try { new URL(uri); } catch {
+          showBanner(clientError, clientErrorText, `Invalid URL: ${uri}`);
+          return;
+        }
+      }
+
+      setLoading(clientSubmitBtn, clientSpinner, clientBtnText, 'Create client', true);
+      try {
+        const res  = await fetch('/org/clients/register', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ client_name, redirect_uris }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          showBanner(clientError, clientErrorText, data.error || 'Something went wrong.');
+          return;
+        }
+
+        // Show credentials card
+        document.getElementById('clientSection').classList.add('hidden');
+        document.getElementById('outClientId').textContent     = data.client_id;
+        document.getElementById('outClientSecret').textContent = data.client_secret;
+        const authUrl = `${window.location.origin}/o/authorize?client_id=${encodeURIComponent(data.client_id)}&redirect_uri=${encodeURIComponent(redirect_uris[0])}&response_type=code&scope=openid+profile+email`;
+        document.getElementById('outAuthUrl').textContent = authUrl;
+        document.getElementById('credentialsCard').classList.remove('hidden');
+
+        // Refresh the clients list from DB
+        fetch('/org/me', { headers: { 'Authorization': `Bearer ${TOKEN}` } })
+          .then(r => r.json()).then(d => renderClientsList(d.clients || [])).catch(() => {});
+
+      } catch {
+        showBanner(clientError, clientErrorText, 'Network error. Please try again.');
+      } finally {
+        setLoading(clientSubmitBtn, clientSpinner, clientBtnText, 'Create client', false);
+      }
+    });
+
+    // ── Copy buttons ─────────────────────────────────────────────────────────
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-copy');
+        const text     = document.getElementById(targetId).textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = btn.innerHTML;
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+          setTimeout(() => { btn.innerHTML = orig; }, 1500);
+        });
+      });
+    });
+
+    // ── Create another client ────────────────────────────────────────────────
+    document.getElementById('createAnotherBtn').addEventListener('click', () => {
+      document.getElementById('credentialsCard').classList.add('hidden');
+      const clientSec = document.getElementById('clientSection');
+      clientSec.classList.remove('hidden');
+      document.getElementById('clientForm').reset();
+      hideBanner(clientError);
+    });
+  </script>
+</body>
+</html>

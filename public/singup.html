@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account · Aura Auth</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          keyframes: {
+            spin: { to: { transform: 'rotate(360deg)' } },
+            fadeIn: { from: { opacity: 0, transform: 'translateY(6px)' }, to: { opacity: 1, transform: 'translateY(0)' } }
+          },
+          animation: {
+            spin: 'spin 0.7s linear infinite',
+            fadeIn: 'fadeIn 0.3s ease-out'
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+
+<body class="h-full bg-white dark:bg-zinc-950 font-sans antialiased">
+
+  <div class="min-h-full flex">
+
+    <!-- Left panel — branding -->
+    <div
+      class="hidden lg:flex lg:w-1/2 flex-col justify-between bg-zinc-950 dark:bg-zinc-900 p-12 relative overflow-hidden">
+      <div
+        class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:40px_40px]">
+      </div>
+      <div class="absolute -top-32 -left-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl"></div>
+
+      <div class="relative">
+        <div class="flex items-center gap-2.5">
+          <img src="./assets/AA.png" alt="Aura Auth" class="w-8 h-8 rounded-lg object-contain" />
+          <span class="text-white font-semibold text-lg tracking-tight">Aura Auth</span>
+        </div>
+      </div>
+
+      <div class="relative space-y-6">
+        <div class="space-y-3">
+          <div
+            class="inline-flex items-center gap-2 bg-white/10 text-white/80 text-xs font-medium px-3 py-1.5 rounded-full ring-1 ring-white/10">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Free to get started
+          </div>
+          <h1 class="text-4xl font-bold text-white leading-tight tracking-tight">
+            Get started<br />in seconds.
+          </h1>
+          <p class="text-zinc-400 text-base leading-relaxed max-w-xs">
+            Create your account and start integrating Aura Auth into your product today.
+          </p>
+        </div>
+
+        <ul class="space-y-3 max-w-xs">
+          <li class="flex items-center gap-3 text-sm text-zinc-300">
+            <span
+              class="w-5 h-5 rounded-full bg-indigo-500/20 ring-1 ring-indigo-500/40 flex items-center justify-center shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            Standard OIDC / OAuth 2.0 flows
+          </li>
+          <li class="flex items-center gap-3 text-sm text-zinc-300">
+            <span
+              class="w-5 h-5 rounded-full bg-indigo-500/20 ring-1 ring-indigo-500/40 flex items-center justify-center shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            RS256 signed JWTs with JWKS
+          </li>
+          <li class="flex items-center gap-3 text-sm text-zinc-300">
+            <span
+              class="w-5 h-5 rounded-full bg-indigo-500/20 ring-1 ring-indigo-500/40 flex items-center justify-center shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            Refresh token rotation
+          </li>
+        </ul>
+      </div>
+
+      <p class="relative text-zinc-600 text-xs">© 2025 Aura Auth. All rights reserved.</p>
+    </div>
+
+    <!-- Right panel — form -->
+    <div class="flex-1 flex items-center justify-center p-6 sm:p-12">
+      <div class="w-full max-w-sm animate-fadeIn">
+
+        <!-- Mobile logo -->
+        <div class="flex lg:hidden items-center gap-2 mb-8">
+          <div class="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+          </div>
+          <span class="font-semibold text-zinc-900 dark:text-white">Aura Auth</span>
+        </div>
+
+        <div class="mb-8">
+          <h2 class="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Create an account</h2>
+          <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Enter your details to get started</p>
+        </div>
+
+        <!-- Error banner -->
+        <div id="errorMsg" role="alert" aria-live="assertive"
+          class="hidden mb-4 flex items-start gap-2.5 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl px-4 py-3">
+          <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span id="errorText"></span>
+        </div>
+
+        <!-- Success banner -->
+        <div id="successMsg" role="status" aria-live="polite"
+          class="hidden mb-4 flex items-start gap-2.5 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl px-4 py-3">
+          <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="9 12 11 14 15 10" />
+          </svg>
+          <span id="successText"></span>
+        </div>
+
+        <form id="signupForm" novalidate class="space-y-4">
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1.5">
+              <label for="firstName" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">First
+                name</label>
+              <input id="firstName" name="firstName" type="text" autocomplete="given-name" placeholder="John" required
+                class="w-full h-10 px-3.5 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400" />
+            </div>
+            <div class="space-y-1.5">
+              <label for="lastName" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Last name</label>
+              <input id="lastName" name="lastName" type="text" autocomplete="family-name" placeholder="Doe"
+                class="w-full h-10 px-3.5 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400" />
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <label for="email" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required
+              class="w-full h-10 px-3.5 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400" />
+          </div>
+
+          <div class="space-y-1.5">
+            <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Password</label>
+            <div class="relative">
+              <input id="password" name="password" type="password" autocomplete="new-password"
+                placeholder="Min. 8 characters" required
+                class="w-full h-10 px-3.5 pr-10 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400" />
+              <button type="button" id="togglePw" aria-label="Toggle password visibility"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+            <!-- Password strength bar -->
+            <div class="flex gap-1 mt-1.5" id="strengthBars">
+              <div class="h-1 flex-1 rounded-full bg-zinc-200 dark:bg-zinc-700 transition-colors" data-bar="0"></div>
+              <div class="h-1 flex-1 rounded-full bg-zinc-200 dark:bg-zinc-700 transition-colors" data-bar="1"></div>
+              <div class="h-1 flex-1 rounded-full bg-zinc-200 dark:bg-zinc-700 transition-colors" data-bar="2"></div>
+              <div class="h-1 flex-1 rounded-full bg-zinc-200 dark:bg-zinc-700 transition-colors" data-bar="3"></div>
+            </div>
+            <p id="strengthLabel" class="text-xs text-zinc-400 dark:text-zinc-500"></p>
+          </div>
+
+          <div class="space-y-1.5">
+            <label for="confirmPassword" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Confirm
+              password</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password"
+              placeholder="••••••••" required
+              class="w-full h-10 px-3.5 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400" />
+            <p id="confirmHint" class="hidden text-xs text-red-500">Passwords do not match</p>
+          </div>
+
+          <button type="submit" id="submitBtn"
+            class="w-full h-10 flex items-center justify-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2">
+            <span id="spinner"
+              class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <span id="btnText">Create account</span>
+          </button>
+
+          <p class="text-center text-xs text-zinc-500 dark:text-zinc-400">
+            By creating an account you agree to our
+            <a href="#" class="underline underline-offset-2 hover:text-zinc-700 dark:hover:text-zinc-300">Terms</a>
+            and
+            <a href="#" class="underline underline-offset-2 hover:text-zinc-700 dark:hover:text-zinc-300">Privacy
+              Policy</a>.
+          </p>
+
+        </form>
+
+        <p class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+          Already have an account?
+          <a id="signinLink" href="/o/authenticate"
+            class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Sign in</a>
+        </p>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('signupForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+    const errorMsg = document.getElementById('errorMsg');
+    const errorText = document.getElementById('errorText');
+    const successMsg = document.getElementById('successMsg');
+    const successText = document.getElementById('successText');
+    const pwInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirmPassword');
+    const confirmHint = document.getElementById('confirmHint');
+    const strengthBars = document.querySelectorAll('[data-bar]');
+    const strengthLabel = document.getElementById('strengthLabel');
+    const signinLink = document.getElementById('signinLink');
+
+    // Preserve OAuth params
+    const params = new URLSearchParams(window.location.search);
+    if (params.toString()) signinLink.href = `/o/authenticate?${params.toString()}`;
+
+    // Toggle password visibility
+    document.getElementById('togglePw').addEventListener('click', () => {
+      pwInput.type = pwInput.type === 'text' ? 'password' : 'text';
+    });
+
+    // Password strength meter
+    function getStrength(pw) {
+      let score = 0;
+      if (pw.length >= 8) score++;
+      if (pw.length >= 12) score++;
+      if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+      if (/[0-9]/.test(pw) || /[^A-Za-z0-9]/.test(pw)) score++;
+      return score; // 0–4
+    }
+
+    const strengthColors = ['bg-red-500', 'bg-orange-400', 'bg-yellow-400', 'bg-emerald-500'];
+    const strengthLabels = ['Too weak', 'Weak', 'Fair', 'Strong'];
+
+    pwInput.addEventListener('input', () => {
+      const score = pwInput.value.length === 0 ? 0 : getStrength(pwInput.value);
+      strengthBars.forEach((bar, i) => {
+        bar.className = `h-1 flex-1 rounded-full transition-colors ${pwInput.value.length === 0 ? 'bg-zinc-200 dark:bg-zinc-700'
+            : i < score ? strengthColors[score - 1]
+              : 'bg-zinc-200 dark:bg-zinc-700'
+          }`;
+      });
+      strengthLabel.textContent = pwInput.value.length === 0 ? '' : strengthLabels[Math.max(0, score - 1)];
+    });
+
+    // Confirm password live validation
+    confirmInput.addEventListener('input', () => {
+      const mismatch = confirmInput.value && confirmInput.value !== pwInput.value;
+      confirmHint.classList.toggle('hidden', !mismatch);
+      confirmInput.setAttribute('aria-invalid', mismatch ? 'true' : 'false');
+    });
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorMsg.classList.remove('hidden');
+      errorMsg.classList.add('flex');
+      successMsg.classList.add('hidden');
+      successMsg.classList.remove('flex');
+    }
+
+    function showSuccess(msg) {
+      successText.textContent = msg;
+      successMsg.classList.remove('hidden');
+      successMsg.classList.add('flex');
+      errorMsg.classList.add('hidden');
+      errorMsg.classList.remove('flex');
+    }
+
+    function setLoading(on) {
+      submitBtn.disabled = on;
+      spinner.classList.toggle('hidden', !on);
+      btnText.textContent = on ? 'Creating account…' : 'Create account';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = pwInput.value;
+      const confirmPassword = confirmInput.value;
+
+      if (!firstName || !email || !password || !confirmPassword) {
+        showError('Please fill in all required fields.');
+        return;
+      }
+      if (password.length < 8) {
+        showError('Password must be at least 8 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        showError('Passwords do not match.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await fetch('/o/authenticate/sign-up', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ firstName, lastName, email, password }),
+        });
+
+        console.log(res);
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          showError(data.error || 'Something went wrong. Please try again.');
+          return;
+        }
+
+        showSuccess('Account created! Redirecting to sign in…');
+        setTimeout(() => {
+          // Preserve OAuth params when bouncing to sign-in
+          window.location.href = `/o/authenticate${window.location.search}`;
+        }, 1400);
+
+      } catch {
+        showError('Network error. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+
+</html>
