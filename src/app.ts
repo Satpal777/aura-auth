@@ -29,6 +29,7 @@ function withCors(res: Response): Response {
 
 export const createServer = async () => {
     const pg = await Database.getInstance();
+    console.log("latest version")
     const server = Bun.serve({
         development: true,
         port: 3000,
