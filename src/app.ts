@@ -34,17 +34,27 @@ export const createServer = async () => {
         port: 3000,
 
         fetch(req, server) {
+            const url = new URL(req.url);
+            const origin = req.headers.get("Origin") ?? "no-origin";
+            console.log(`[CORS] ${req.method} ${url.pathname} | Origin: ${origin}`);
+
             if (req.method === "OPTIONS") {
+                console.log(`[CORS] ↳ Preflight 204 for ${url.pathname}`);
                 return new Response(null, { status: 204, headers: corsHeaders });
             }
 
             const routeResponse = server.fetch(req);
             if (routeResponse) {
+                const addCorsAndLog = (res: Response) => {
+                    console.log(`[CORS] ↳ Route matched ${url.pathname} → ${res.status} | Adding CORS headers`);
+                    return withCors(res);
+                };
                 return routeResponse instanceof Promise
-                    ? routeResponse.then(withCors)
-                    : withCors(routeResponse);
+                    ? routeResponse.then(addCorsAndLog)
+                    : addCorsAndLog(routeResponse);
             }
 
+            console.log(`[CORS] ↳ No route matched ${url.pathname} → 404`);
             return withCors(new Response("Not found.", { status: 404 }));
         },
 
