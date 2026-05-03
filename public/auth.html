@@ -32,135 +32,76 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 
-<body class="h-full bg-white dark:bg-zinc-950 font-sans antialiased">
+<body class="h-full bg-zinc-50 dark:bg-zinc-950 font-sans antialiased flex items-center justify-center p-4 sm:p-8">
 
-  <div class="min-h-full flex">
+  <div class="w-full max-w-[420px] bg-white dark:bg-zinc-900 sm:rounded-2xl sm:shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:border border-zinc-100 dark:border-zinc-800 p-6 sm:p-10 animate-fadeIn relative overflow-hidden">
+    <!-- Subtle top gradient -->
+    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80"></div>
 
-    <!-- Left panel — branding -->
-    <div
-      class="hidden lg:flex lg:w-1/2 flex-col justify-between bg-zinc-950 dark:bg-zinc-900 p-12 relative overflow-hidden">
-      <!-- Subtle grid -->
-      <div
-        class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:40px_40px]">
-      </div>
-      <!-- Glows -->
-      <div class="absolute -top-32 -left-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
-      <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl"></div>
-
-        <div class="relative">
-        <div class="flex items-center gap-2.5">
-          <img src="./assets/AA.png" alt="Aura Auth" class="w-8 h-8 rounded-lg object-contain" />
-          <span class="text-white font-semibold text-lg tracking-tight">Aura Auth</span>
-        </div>
-      </div>
-
-      <div class="relative space-y-6">
-        <div class="space-y-3">
-          <div
-            class="inline-flex items-center gap-2 bg-white/10 text-white/80 text-xs font-medium px-3 py-1.5 rounded-full ring-1 ring-white/10">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            Secure · Open Standard
-          </div>
-          <h1 class="text-4xl font-bold text-white leading-tight tracking-tight">
-            Identity you<br />can trust.
-          </h1>
-          <p class="text-zinc-400 text-base leading-relaxed max-w-xs">
-            Enterprise-grade OIDC authentication. One integration, every app.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 max-w-xs">
-          <div class="bg-white/5 ring-1 ring-white/10 rounded-xl p-4">
-            <div class="text-2xl font-bold text-white">RS256</div>
-            <div class="text-xs text-zinc-500 mt-1">Token signing</div>
-          </div>
-          <div class="bg-white/5 ring-1 ring-white/10 rounded-xl p-4">
-            <div class="text-2xl font-bold text-white">PKCE</div>
-            <div class="text-xs text-zinc-500 mt-1">Flow support</div>
-          </div>
-        </div>
-      </div>
-
-      <p class="relative text-zinc-600 text-xs">© 2025 Aura Auth. All rights reserved.</p>
+    <!-- Logo -->
+    <div class="flex justify-center mb-8 mt-2">
+      <img src="./assets/AA.png" alt="Aura Auth" class="w-12 h-12 rounded-xl object-contain shadow-sm ring-1 ring-zinc-900/5 dark:ring-white/10" />
     </div>
 
-    <!-- Right panel — form -->
-    <div class="flex-1 flex items-center justify-center p-6 sm:p-12">
-      <div class="w-full max-w-sm animate-fadeIn">
+    <div class="mb-8 text-center">
+      <h2 class="text-2xl font-semibold text-zinc-900 dark:text-white tracking-tight">Sign in</h2>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">to continue to Aura Auth</p>
+    </div>
 
-        <!-- Mobile logo -->
-        <div class="flex lg:hidden items-center gap-2 mb-8">
-          <div class="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
-          <span class="font-semibold text-zinc-900 dark:text-white">Aura Auth</span>
-        </div>
+    <!-- Error banner -->
+    <div id="errorMsg" role="alert" aria-live="assertive"
+      class="hidden mb-6 flex items-start gap-2.5 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl px-4 py-3">
+      <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <span id="errorText"></span>
+    </div>
 
-        <div class="mb-8">
-          <h2 class="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Welcome back</h2>
-          <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Sign in to your account to continue</p>
-        </div>
+    <form id="loginForm" novalidate class="space-y-5">
 
-        <!-- Error banner -->
-        <div id="errorMsg" role="alert" aria-live="assertive"
-          class="hidden mb-4 flex items-start gap-2.5 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl px-4 py-3">
-          <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <span id="errorText"></span>
-        </div>
-
-        <form id="loginForm" novalidate class="space-y-4">
-
-          <div class="space-y-1.5">
-            <label for="email" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Email</label>
-            <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required
-              class="w-full h-10 px-3.5 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400" />
-          </div>
-
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between">
-              <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Password</label>
-              <a href="#" class="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition">Forgot
-                password?</a>
-            </div>
-            <div class="relative">
-              <input id="password" name="password" type="password" autocomplete="current-password"
-                placeholder="••••••••" required
-                class="w-full h-10 px-3.5 pr-10 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400" />
-              <button type="button" id="togglePw" aria-label="Toggle password visibility"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition">
-                <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <button type="submit" id="submitBtn"
-            class="w-full h-10 flex items-center justify-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2">
-            <span id="spinner"
-              class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            <span id="btnText">Sign in</span>
-          </button>
-
-        </form>
-
-        <p class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Don't have an account?
-          <a id="signupLink" href="/o/signup"
-            class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Sign up</a>
-        </p>
-
+      <div class="space-y-2">
+        <label for="email" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="email" required
+          class="w-full h-11 px-4 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400" />
       </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label for="password" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Password</label>
+          <a href="#" class="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 transition">Forgot password?</a>
+        </div>
+        <div class="relative">
+          <input id="password" name="password" type="password" autocomplete="current-password" required
+            class="w-full h-11 px-4 pr-11 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl placeholder-zinc-400 dark:placeholder-zinc-600 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:focus:border-indigo-400" />
+          <button type="button" id="togglePw" aria-label="Toggle password visibility"
+            class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition hover:bg-zinc-100 dark:hover:bg-zinc-800">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn"
+        class="w-full h-11 flex items-center justify-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2">
+        <span id="spinner"
+          class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+        <span id="btnText">Sign in</span>
+      </button>
+
+    </form>
+
+    <div class="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800">
+      <p class="text-center text-sm text-zinc-500 dark:text-zinc-400">
+        Don't have an account?
+        <a id="signupLink" href="/o/signup"
+          class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition">Create account</a>
+      </p>
     </div>
 
   </div>
