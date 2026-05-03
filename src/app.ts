@@ -56,7 +56,7 @@ export const createServer = async () => {
 
             "/.well-known/openid-configuration": _ => {
                 console.log("Serving OpenID configuration");
-                const issuer: string = server.url.origin;
+                const issuer: string = process.env.ISSUER_URL ?? server.url.origin;
                 return Response.json({
                     issuer,
                     authorization_endpoint: `${issuer}/o/authorize`,
@@ -91,7 +91,7 @@ export const createServer = async () => {
                     return Response.json({ error: "Invalid email or password." }, { status: 401, headers: corsHeaders });
                 }
 
-                const token = await signUserToken(user, server.url.origin);
+                const token = await signUserToken(user, process.env.ISSUER_URL ?? server.url.origin);
                 return Response.json({ token }, { status: 200, headers: corsHeaders });
             },
 
@@ -127,7 +127,7 @@ export const createServer = async () => {
             },
 
             "/o/userinfo": async (req) => {
-                const claims = await verifyBearerToken(req, server.url.origin);
+                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
                 if (claims instanceof Response) return claims;
 
                 const [user] = await pg`SELECT id FROM users WHERE id = ${claims.sub} LIMIT 1`;
@@ -172,7 +172,7 @@ export const createServer = async () => {
                     return Response.json({ error: "Invalid redirect_uri." }, { status: 401, headers: corsHeaders });
                 }
 
-                const loginUrl: URL = new URL("/o/authenticate", server.url.origin);
+                const loginUrl: URL = new URL("/o/authenticate", process.env.ISSUER_URL ?? server.url.origin);
                 loginUrl.searchParams.set("client_id", clientId);
                 loginUrl.searchParams.set("redirect_uri", redirectUri);
                 loginUrl.searchParams.set("state", state);
@@ -279,7 +279,7 @@ export const createServer = async () => {
                     }
 
                     const [id_token, refresh_token] = await Promise.all([
-                        signUserToken(user, server.url.origin),
+                        signUserToken(user, process.env.ISSUER_URL ?? server.url.origin),
                         issueRefreshToken(user.id),
                     ]) as any;
 
@@ -311,7 +311,7 @@ export const createServer = async () => {
                     }
 
                     const [id_token, new_refresh_token] = await Promise.all([
-                        signUserToken(user, server.url.origin),
+                        signUserToken(user, process.env.ISSUER_URL ?? server.url.origin),
                         issueRefreshToken(user.id),
                     ]) as any;
 
@@ -323,7 +323,7 @@ export const createServer = async () => {
             },
 
             "/org/me": async (req) => {
-                const claims = await verifyBearerToken(req, server.url.origin);
+                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
                 if (claims instanceof Response) return claims;
 
                 const [org] = await pg`
@@ -350,7 +350,7 @@ export const createServer = async () => {
             },
 
             "/org/register": async (req) => {
-                const claims = await verifyBearerToken(req, server.url.origin);
+                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
                 if (claims instanceof Response) return claims;
 
                 const { name } = await req.json() as { name?: string };
@@ -385,7 +385,7 @@ export const createServer = async () => {
 
 
             "/org/clients/register": async (req) => {
-                const claims = await verifyBearerToken(req, server.url.origin);
+                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
                 if (claims instanceof Response) return claims;
 
                 const [org] = await pg`SELECT id FROM organizations WHERE owner_user_id = ${claims.sub} LIMIT 1`;
@@ -433,6 +433,6 @@ export const createServer = async () => {
         },
     });
 
-    console.log("Server is running on", server.url.origin);
+    console.log("Server is running on", process.env.ISSUER_URL ?? server.url.origin);
     return server;
 };
