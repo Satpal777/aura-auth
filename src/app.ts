@@ -191,7 +191,7 @@ export const createServer = async () => {
                     SELECT id, redirect_uris FROM oidc_clients
                     WHERE client_id = ${client_id} AND is_active = true LIMIT 1
                 `;
-                if (!client || !(client.redirectUris as string[]).includes(redirect_uri)) {
+                if (!client || !(client.redirect_uris as string[]).includes(redirect_uri)) {
                     return Response.json({ error: "Invalid client or redirect_uri." }, { status: 401, headers: corsHeaders });
                 }
 
