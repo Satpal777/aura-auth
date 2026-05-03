@@ -2,7 +2,7 @@ import { generateKeyPair, exportSPKI, exportPKCS8 } from "jose";
 import { mkdirSync, readdirSync, writeFileSync } from "fs";
 import { join } from "path";
 
-const CERT_DIR = "./cert";
+const CERT_DIR = "./certs";
 
 function getKid() {
     return `key-${Date.now()}`;
