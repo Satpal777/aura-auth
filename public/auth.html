@@ -46,7 +46,7 @@
 
     <div class="mb-8 text-center">
       <h2 class="text-2xl font-semibold text-zinc-900 dark:text-white tracking-tight">Sign in</h2>
-      <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">to continue to Aura Auth</p>
+      <p id="clientSubtitle" class="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">to continue to Aura Auth</p>
     </div>
 
     <!-- Error banner -->
@@ -121,6 +121,14 @@
     // Preserve OAuth params on signup link
     const params = new URLSearchParams(window.location.search);
     if (params.toString()) signupLink.href = `/o/signup?${params.toString()}`;
+
+    // Update client name if present
+    const clientName = params.get('client_name');
+    if (clientName) {
+      const subtitle = document.getElementById('clientSubtitle');
+      if (subtitle) subtitle.textContent = `to continue to ${clientName}`;
+      document.title = `Sign in to ${clientName} · Aura Auth`;
+    }
 
     // Toggle password visibility
     togglePw.addEventListener('click', () => {

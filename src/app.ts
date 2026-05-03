@@ -163,7 +163,7 @@ export const createServer = async () => {
                 }
 
                 const [client] = await pg`
-                    SELECT id, redirect_uris FROM oidc_clients
+                    SELECT id, redirect_uris, client_name FROM oidc_clients
                     WHERE client_id = ${clientId} AND is_active = true LIMIT 1
                 `;
                 if (!client) {
@@ -178,6 +178,9 @@ export const createServer = async () => {
                 loginUrl.searchParams.set("redirect_uri", redirectUri);
                 loginUrl.searchParams.set("state", state);
                 loginUrl.searchParams.set("scope", scope);
+                if (client.client_name) {
+                    loginUrl.searchParams.set("client_name", client.client_name);
+                }
                 return Response.redirect(loginUrl.toString(), 302);
             },
 
