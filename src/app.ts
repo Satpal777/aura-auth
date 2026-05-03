@@ -77,6 +77,7 @@ export const createServer = async () => {
             "/dashboard": dashboardPage,
 
             "/o/authenticate/sign-in": async (req) => {
+                if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
                 const { email, password } = await req.json() as any;
                 if (!email || !password) {
                     return Response.json({ error: "Email and password are required." }, { status: 400, headers: corsHeaders });
@@ -97,6 +98,7 @@ export const createServer = async () => {
             },
 
             "/o/authenticate/sign-up": async (req) => {
+                if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
                 const { firstName, lastName, email, password } = await req.json() as any;
                 console.log("received", firstName, lastName, email, password);
                 if (!email || !password || !firstName) {
@@ -128,6 +130,7 @@ export const createServer = async () => {
             },
 
             "/o/userinfo": async (req) => {
+                if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
                 const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
                 if (claims instanceof Response) return claims;
 
@@ -185,6 +188,7 @@ export const createServer = async () => {
             },
 
             "/o/authorize/callback": async (req) => {
+                if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
                 const { email, password, client_id, redirect_uri, state, scope } = await req.json() as any;
                 if (!email || !password || !client_id || !redirect_uri) {
                     return Response.json({ error: "email, password, client_id, and redirect_uri are required." }, { status: 400, headers: corsHeaders });
@@ -226,6 +230,7 @@ export const createServer = async () => {
             },
 
             "/o/token": async (req) => {
+                if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
                 const body = await req.json() as any;
                 const { grant_type, client_id, client_secret } = body;
 
@@ -327,6 +332,7 @@ export const createServer = async () => {
             },
 
             "/org/me": async (req) => {
+                if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
                 const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
                 if (claims instanceof Response) return claims;
 
@@ -354,6 +360,7 @@ export const createServer = async () => {
             },
 
             "/org/register": async (req) => {
+                if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
                 const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
                 if (claims instanceof Response) return claims;
 
@@ -389,6 +396,7 @@ export const createServer = async () => {
 
 
             "/org/clients/register": async (req) => {
+                if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
                 const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
                 if (claims instanceof Response) return claims;
 
