@@ -34,11 +34,11 @@ export async function signUserToken(user: Record<string, unknown>, issuer: strin
     return new SignJWT({
         sub: user.id as string,
         email: user.email,
-        email_verified: user.emailVerified,
-        given_name: user.firstName ?? "",
-        family_name: user.lastName ?? undefined,
-        name: [user.firstName, user.lastName].filter(Boolean).join(" "),
-        picture: user.profileImageURL ?? undefined,
+        email_verified: user.email_verified,
+        given_name: user.first_name ?? "",
+        family_name: user.last_name ?? undefined,
+        name: [user.first_name, user.last_name].filter(Boolean).join(" "),
+        picture: user.profile_image_url ?? undefined,
     })
         .setProtectedHeader({ alg: "RS256", kid })
         .setIssuer(issuer)

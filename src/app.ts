@@ -278,13 +278,13 @@ export const createServer = async () => {
                     if (!authCode) {
                         return Response.json({ error: "Invalid or expired code." }, { status: 401, headers: corsHeaders });
                     }
-                    if (authCode.redirectUri !== redirect_uri) {
+                    if (authCode.redirect_uri !== redirect_uri) {
                         return Response.json({ error: "redirect_uri mismatch." }, { status: 401, headers: corsHeaders });
                     }
 
                     await pg`UPDATE authorization_codes SET used = true WHERE id = ${authCode.id}`;
 
-                    const [user] = await pg`SELECT * FROM users WHERE id = ${authCode.userId} LIMIT 1`;
+                    const [user] = await pg`SELECT * FROM users WHERE id = ${authCode.user_id} LIMIT 1`;
                     if (!user) {
                         return Response.json({ error: "User not found." }, { status: 404, headers: corsHeaders });
                     }
@@ -316,7 +316,7 @@ export const createServer = async () => {
                     // Rotate: revoke old, issue new
                     await pg`UPDATE refresh_tokens SET revoked = true WHERE id = ${stored.id}`;
 
-                    const [user] = await pg`SELECT * FROM users WHERE id = ${stored.userId} LIMIT 1`;
+                    const [user] = await pg`SELECT * FROM users WHERE id = ${stored.user_id} LIMIT 1`;
                     if (!user) {
                         return Response.json({ error: "User not found." }, { status: 404, headers: corsHeaders });
                     }
