@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura Auth</title>
+  <link rel="icon" type="image/png" href="./assets/AA.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            brand: { DEFAULT: '#6366f1', hover: '#4f46e5', ring: '#a5b4fc' }
+          },
+          keyframes: {
+            fadeIn: { from: { opacity: 0, transform: 'translateY(6px)' }, to: { opacity: 1, transform: 'translateY(0)' } }
+          },
+          animation: {
+            fadeIn: 'fadeIn 0.3s ease-out'
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+
+<body class="h-full bg-zinc-50 dark:bg-zinc-950 font-sans antialiased flex flex-col">
+
+  <header
+    class="sticky top-0 z-10 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
+    <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <img src="./assets/AA.png" alt="Aura Auth" class="w-7 h-7 rounded-lg object-contain shrink-0" />
+        <span class="font-semibold text-sm text-zinc-900 dark:text-white">Aura Auth</span>
+      </div>
+      <div id="navButtons" class="flex gap-3 items-center">
+        <!-- Buttons injected by JS -->
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
+    <div class="max-w-3xl mx-auto">
+      <div class="flex justify-center mb-6">
+        <img src="./assets/AA.png" alt="Aura Auth Logo"
+          class="w-20 h-20 rounded-2xl object-contain shadow-lg ring-1 ring-zinc-900/5 dark:ring-white/10" />
+      </div>
+      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-zinc-900 dark:text-white mb-6">
+        The complete identity platform
+      </h1>
+      <p class="text-lg text-zinc-600 dark:text-zinc-400 mb-10 max-w-2xl mx-auto">
+        Aura Auth provides secure, scalable, and easy-to-integrate authentication for your web and mobile applications.
+        Create an organization and register your OIDC clients to get started.
+      </p>
+
+      <div id="heroActions" class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <!-- Actions injected by JS -->
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('aura_token');
+    const navButtons = document.getElementById('navButtons');
+    const heroActions = document.getElementById('heroActions');
+
+    if (token) {
+      navButtons.innerHTML = `
+        <a href="/dashboard" class="text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl px-4 py-2 transition">Go to Dashboard</a>
+      `;
+      heroActions.innerHTML = `
+        <a href="/dashboard" class="h-12 px-8 flex items-center justify-center gap-2 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-sm">
+          Go to Dashboard
+        </a>
+      `;
+    } else {
+      navButtons.innerHTML = `
+        <a href="/o/authenticate" class="text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition">Sign In</a>
+        <a href="/o/signup" class="text-sm font-semibold text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-xl px-4 py-2 transition">Sign Up</a>
+      `;
+      heroActions.innerHTML = `
+        <a href="/o/authenticate" class="h-12 px-8 flex items-center justify-center gap-2 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-sm">
+          Sign In
+        </a>
+        <a href="/o/signup" class="h-12 px-8 flex items-center justify-center gap-2 text-base font-medium text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 rounded-xl transition shadow-sm">
+          Create Account
+        </a>
+      `;
+    }
+  </script>
+</body>
+
+</html>

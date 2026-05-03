@@ -2,6 +2,7 @@ import { getJWKS } from "./utils/cert";
 import authPage from "./../public/auth.html";
 import signupPage from "./../public/singup.html";
 import dashboardPage from "./../public/dashboard.html";
+import indexPage from "./../public/index.html";
 import { Database } from "./db/db";
 import { generateSecret, hashSecret, signUserToken, verifyBearerToken } from "./utils/auth";
 
@@ -42,7 +43,7 @@ export const createServer = async () => {
 
         routes: {
 
-            "/": new Response("Hello, from  Aura Auth!", { headers: corsHeaders }),
+            "/": indexPage,
 
             "/assets/*": async (req) => {
                 const url = new URL(req.url);
