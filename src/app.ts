@@ -242,10 +242,11 @@ export const createServer = async () => {
                     SELECT id, client_secret_hash FROM oidc_clients
                     WHERE client_id = ${client_id} AND is_active = true LIMIT 1
                 `;
-                if (!client?.clientSecretHash) {
+
+                if (!client?.client_secret_hash) {
                     return Response.json({ error: "Invalid client." }, { status: 401, headers: corsHeaders });
                 }
-                const isClientValid = (await hashSecret(client_secret)) === client.clientSecretHash;
+                const isClientValid = (await hashSecret(client_secret)) === client.client_secret_hash;
                 if (!isClientValid) {
                     return Response.json({ error: "Invalid client secret." }, { status: 401, headers: corsHeaders });
                 }
@@ -273,6 +274,7 @@ export const createServer = async () => {
                           AND used = false AND expires_at > now()
                         LIMIT 1
                     `;
+
                     if (!authCode) {
                         return Response.json({ error: "Invalid or expired code." }, { status: 401, headers: corsHeaders });
                     }
