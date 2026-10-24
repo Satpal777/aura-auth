@@ -5,6 +5,19 @@ import dashboardPage from "./../public/dashboard.html";
 import indexPage from "./../public/index.html";
 import { Database } from "./db/db";
 import { generateSecret, hashSecret, signUserToken, verifyBearerToken } from "./utils/auth";
+import { logger } from "./utils/logger";
+import { checkRateLimit } from "./utils/rate-limit";
+import {
+    isValidEmail,
+    isNonEmptyString,
+    isValidPassword,
+    type SignInBody,
+    type SignUpBody,
+    type AuthorizeCallbackBody,
+    type TokenBody,
+    type OrgRegisterBody,
+    type ClientRegisterBody,
+} from "./utils/validation";
 
 /**
  * Converts a JS string array to a PostgreSQL array literal: {"val1","val2"}
@@ -14,30 +27,77 @@ function toPostgresArray(arr: string[]): string {
     return '{' + arr.map(s => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"').join(',') + '}';
 }
 
-const corsHeaders: Record<string, string> = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "*",
-};
+/** Maximum request body size (1 MB). */
+const MAX_BODY_SIZE = 1024 * 1024;
+
+/** Build CORS headers from allowed origins env var. */
+function buildCorsHeaders(origin: string | null): Record<string, string> {
+    const allowedRaw = process.env.ALLOWED_ORIGINS ?? "*";
+
+    if (allowedRaw === "*") {
+        return {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        };
+    }
+
+    const allowedOrigins = allowedRaw.split(",").map(o => o.trim());
+    const matched = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0]!;
+
+    return {
+        "Access-Control-Allow-Origin": matched,
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Vary": "Origin",
+    };
+}
+
+/** Safely parse JSON body with size check. */
+async function parseBody<T>(req: Request, corsHeaders: Record<string, string>): Promise<T | Response> {
+    const contentLength = Number(req.headers.get("content-length") ?? "0");
+    if (contentLength > MAX_BODY_SIZE) {
+        return Response.json(
+            { error: "Request body too large." },
+            { status: 413, headers: corsHeaders },
+        );
+    }
+
+    try {
+        return await req.json() as T;
+    } catch {
+        return Response.json(
+            { error: "Invalid JSON body." },
+            { status: 400, headers: corsHeaders },
+        );
+    }
+}
 
 export const createServer = async () => {
     const pg = await Database.getInstance();
-    console.log("latest version")
+    const isProduction = process.env.NODE_ENV === "production";
+    const port = Number(process.env.PORT) || 3000;
+
     const server = Bun.serve({
-        development: true,
-        port: 3000,
+        development: !isProduction,
+        port,
 
         fetch(req, server) {
-            console.log("start of fetch")
             const url = new URL(req.url);
-            const origin = req.headers.get("Origin") ?? "no-origin";
-            console.log(`[CORS] ${req.method} ${url.pathname} | Origin: ${origin}`);
+            const origin = req.headers.get("Origin");
+            const corsHeaders = buildCorsHeaders(origin);
 
             if (req.method === "OPTIONS") {
-                console.log(`[CORS] ↳ Preflight 204 for ${url.pathname}`);
-                return new Response(null, { status: 204, headers: corsHeaders });
+                return new Response(null, {
+                    status: 204,
+                    headers: {
+                        ...corsHeaders,
+                        "Access-Control-Max-Age": "86400",
+                    },
+                });
             }
-            console.log(`[CORS] ↳ No route matched ${url.pathname} → 404`);
+
+            logger.debug("No route matched", { method: req.method, path: url.pathname });
             return new Response("Not found.", { status: 404, headers: corsHeaders });
         },
 
@@ -45,8 +105,11 @@ export const createServer = async () => {
 
             "/": indexPage,
 
+            "/healthz": () => Response.json({ status: "ok" }),
+
             "/assets/*": async (req) => {
                 const url = new URL(req.url);
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 const filePath = `${import.meta.dir}/../public${url.pathname}`;
                 const file = Bun.file(filePath);
                 if (!(await file.exists())) {
@@ -55,8 +118,8 @@ export const createServer = async () => {
                 return new Response(file, { headers: corsHeaders });
             },
 
-            "/.well-known/openid-configuration": _ => {
-                console.log("Serving OpenID configuration");
+            "/.well-known/openid-configuration": (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 const issuer: string = process.env.ISSUER_URL ?? server.url.origin;
                 return Response.json({
                     issuer,
@@ -64,12 +127,23 @@ export const createServer = async () => {
                     token_endpoint: `${issuer}/o/token`,
                     userinfo_endpoint: `${issuer}/o/userinfo`,
                     jwks_uri: `${issuer}/.well-known/jwks.json`,
+                    response_types_supported: ["code"],
+                    grant_types_supported: ["authorization_code", "refresh_token"],
+                    subject_types_supported: ["public"],
+                    id_token_signing_alg_values_supported: ["RS256"],
+                    scopes_supported: ["openid", "profile", "email"],
                 }, { headers: corsHeaders });
             },
 
-            "/.well-known/jwks.json": async _ => {
+            "/.well-known/jwks.json": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 const { keys } = await getJWKS();
-                return Response.json({ keys }, { headers: corsHeaders });
+                return Response.json({ keys }, {
+                    headers: {
+                        ...corsHeaders,
+                        "Cache-Control": "public, max-age=3600",
+                    },
+                });
             },
 
             "/o/authenticate": authPage,
@@ -77,18 +151,31 @@ export const createServer = async () => {
             "/dashboard": dashboardPage,
 
             "/o/authenticate/sign-in": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-                const { email, password } = await req.json() as any;
-                if (!email || !password) {
-                    return Response.json({ error: "Email and password are required." }, { status: 400, headers: corsHeaders });
+
+                // Rate limit by IP
+                const ip = server.requestIP(req)?.address ?? "unknown";
+                const limited = checkRateLimit(ip, corsHeaders);
+                if (limited) return limited;
+
+                const body = await parseBody<SignInBody>(req, corsHeaders);
+                if (body instanceof Response) return body;
+
+                const { email, password } = body;
+                if (!isValidEmail(email) || !isValidPassword(password)) {
+                    return Response.json({ error: "Valid email and password (8–128 chars) are required." }, { status: 400, headers: corsHeaders });
                 }
 
-                const [user] = await pg`SELECT * FROM users WHERE email = ${email} LIMIT 1`;
+                const [user] = await pg`
+                    SELECT id, email, email_verified, first_name, last_name, profile_image_url, password
+                    FROM users WHERE email = ${email} LIMIT 1
+                `;
                 if (!user?.password) {
                     return Response.json({ error: "Invalid email or password." }, { status: 401, headers: corsHeaders });
                 }
 
-                const isMatch = await Bun.password.verify(password, user.password);
+                const isMatch = await Bun.password.verify(password, user.password as string);
                 if (!isMatch) {
                     return Response.json({ error: "Invalid email or password." }, { status: 401, headers: corsHeaders });
                 }
@@ -98,40 +185,52 @@ export const createServer = async () => {
             },
 
             "/o/authenticate/sign-up": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-                const { firstName, lastName, email, password } = await req.json() as any;
-                console.log("received", firstName, lastName, email, password);
-                if (!email || !password || !firstName) {
-                    return Response.json({ error: "Email, password, and first name are required." }, { status: 400, headers: corsHeaders });
+
+                const ip = server.requestIP(req)?.address ?? "unknown";
+                const limited = checkRateLimit(ip, corsHeaders);
+                if (limited) return limited;
+
+                const body = await parseBody<SignUpBody>(req, corsHeaders);
+                if (body instanceof Response) return body;
+
+                const { firstName, lastName, email, password } = body;
+                if (!isNonEmptyString(firstName, 25)) {
+                    return Response.json({ error: "First name is required (max 25 chars)." }, { status: 400, headers: corsHeaders });
+                }
+                if (!isValidEmail(email)) {
+                    return Response.json({ error: "A valid email address is required." }, { status: 400, headers: corsHeaders });
+                }
+                if (!isValidPassword(password)) {
+                    return Response.json({ error: "Password must be 8–128 characters." }, { status: 400, headers: corsHeaders });
                 }
 
-                console.log(firstName, lastName, email, password);
                 const [existing] = await pg`SELECT id FROM users WHERE email = ${email} LIMIT 1`;
                 if (existing) {
                     return Response.json({ error: "Email is already in use." }, { status: 409, headers: corsHeaders });
                 }
 
-                console.log("existing: ", existing);
-
                 const hashedPassword = await Bun.password.hash(password);
                 const [created] = await pg`
                     INSERT INTO users (first_name, last_name, email, password)
-                    VALUES (${firstName}, ${lastName}, ${email}, ${hashedPassword})
+                    VALUES (${firstName}, ${lastName ?? null}, ${email}, ${hashedPassword})
                     RETURNING id
                 `;
-
-                console.log(created);
 
                 if (!created?.id) {
                     return Response.json({ error: "Failed to create user." }, { status: 500, headers: corsHeaders });
                 }
 
+                logger.info("User registered", { userId: created.id, email });
                 return Response.json({ message: "Sign up successful." }, { status: 201, headers: corsHeaders });
             },
 
             "/o/userinfo": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
+
+                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin, corsHeaders);
                 if (claims instanceof Response) return claims;
 
                 const [user] = await pg`SELECT id FROM users WHERE id = ${claims.sub} LIMIT 1`;
@@ -151,6 +250,7 @@ export const createServer = async () => {
             },
 
             "/o/authorize": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 const url = new URL(req.url);
                 const clientId = url.searchParams.get("client_id");
                 const redirectUri = url.searchParams.get("redirect_uri");
@@ -182,15 +282,24 @@ export const createServer = async () => {
                 loginUrl.searchParams.set("state", state);
                 loginUrl.searchParams.set("scope", scope);
                 if (client.client_name) {
-                    loginUrl.searchParams.set("client_name", client.client_name);
+                    loginUrl.searchParams.set("client_name", client.client_name as string);
                 }
                 return Response.redirect(loginUrl.toString(), 302);
             },
 
             "/o/authorize/callback": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-                const { email, password, client_id, redirect_uri, state, scope } = await req.json() as any;
-                if (!email || !password || !client_id || !redirect_uri) {
+
+                const ip = server.requestIP(req)?.address ?? "unknown";
+                const limited = checkRateLimit(ip, corsHeaders);
+                if (limited) return limited;
+
+                const body = await parseBody<AuthorizeCallbackBody>(req, corsHeaders);
+                if (body instanceof Response) return body;
+
+                const { email, password, client_id, redirect_uri, state, scope } = body;
+                if (!isValidEmail(email) || !isValidPassword(password) || !client_id || !redirect_uri) {
                     return Response.json({ error: "email, password, client_id, and redirect_uri are required." }, { status: 400, headers: corsHeaders });
                 }
 
@@ -202,16 +311,19 @@ export const createServer = async () => {
                     return Response.json({ error: "Invalid client or redirect_uri." }, { status: 401, headers: corsHeaders });
                 }
 
-                const [user] = await pg`SELECT * FROM users WHERE email = ${email} LIMIT 1`;
+                const [user] = await pg`
+                    SELECT id, email, email_verified, first_name, last_name, profile_image_url, password
+                    FROM users WHERE email = ${email} LIMIT 1
+                `;
                 if (!user?.password) {
                     return Response.json({ error: "Invalid credentials." }, { status: 401, headers: corsHeaders });
                 }
-                const isMatch = await Bun.password.verify(password, user.password);
+                const isMatch = await Bun.password.verify(password, user.password as string);
                 if (!isMatch) {
                     return Response.json({ error: "Invalid credentials." }, { status: 401, headers: corsHeaders });
                 }
 
-                const code = generateSecret(24); // shorter, URL-safe
+                const code = generateSecret(24);
                 const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
                 await pg`
@@ -223,18 +335,23 @@ export const createServer = async () => {
                 callbackUrl.searchParams.set("code", code);
                 if (state) callbackUrl.searchParams.set("state", state);
 
-                // Return JSON instead of a 302 — the browser fetch in auth.html
-                // cannot follow a cross-origin redirect (localhost:9000 → localhost:3001).
-                // auth.html reads redirect_to and does window.location.href itself.
                 return Response.json({ redirect_to: callbackUrl.toString() }, { headers: corsHeaders });
             },
 
             "/o/token": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-                const body = await req.json() as any;
+
+                const ip = server.requestIP(req)?.address ?? "unknown";
+                const limited = checkRateLimit(ip, corsHeaders);
+                if (limited) return limited;
+
+                const body = await parseBody<TokenBody>(req, corsHeaders);
+                if (body instanceof Response) return body;
+
                 const { grant_type, client_id, client_secret } = body;
 
-                if (!client_id || !client_secret) {
+                if (!isNonEmptyString(client_id) || !isNonEmptyString(client_secret)) {
                     return Response.json({ error: "client_id and client_secret are required." }, { status: 400, headers: corsHeaders });
                 }
 
@@ -284,15 +401,18 @@ export const createServer = async () => {
 
                     await pg`UPDATE authorization_codes SET used = true WHERE id = ${authCode.id}`;
 
-                    const [user] = await pg`SELECT * FROM users WHERE id = ${authCode.user_id} LIMIT 1`;
+                    const [user] = await pg`
+                        SELECT id, email, email_verified, first_name, last_name, profile_image_url
+                        FROM users WHERE id = ${authCode.user_id} LIMIT 1
+                    `;
                     if (!user) {
                         return Response.json({ error: "User not found." }, { status: 404, headers: corsHeaders });
                     }
 
                     const [id_token, refresh_token] = await Promise.all([
                         signUserToken(user, process.env.ISSUER_URL ?? server.url.origin),
-                        issueRefreshToken(user.id),
-                    ]) as any;
+                        issueRefreshToken(user.id as string),
+                    ]);
 
                     return Response.json({ id_token, refresh_token, token_type: "Bearer", expires_in: 3600 }, { headers: corsHeaders });
 
@@ -316,15 +436,18 @@ export const createServer = async () => {
                     // Rotate: revoke old, issue new
                     await pg`UPDATE refresh_tokens SET revoked = true WHERE id = ${stored.id}`;
 
-                    const [user] = await pg`SELECT * FROM users WHERE id = ${stored.user_id} LIMIT 1`;
+                    const [user] = await pg`
+                        SELECT id, email, email_verified, first_name, last_name, profile_image_url
+                        FROM users WHERE id = ${stored.user_id} LIMIT 1
+                    `;
                     if (!user) {
                         return Response.json({ error: "User not found." }, { status: 404, headers: corsHeaders });
                     }
 
                     const [id_token, new_refresh_token] = await Promise.all([
                         signUserToken(user, process.env.ISSUER_URL ?? server.url.origin),
-                        issueRefreshToken(user.id),
-                    ]) as any;
+                        issueRefreshToken(user.id as string),
+                    ]);
 
                     return Response.json({ id_token, refresh_token: new_refresh_token, token_type: "Bearer", expires_in: 3600 }, { headers: corsHeaders });
 
@@ -334,8 +457,10 @@ export const createServer = async () => {
             },
 
             "/org/me": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
+
+                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin, corsHeaders);
                 if (claims instanceof Response) return claims;
 
                 const [org] = await pg`
@@ -362,13 +487,18 @@ export const createServer = async () => {
             },
 
             "/org/register": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
+
+                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin, corsHeaders);
                 if (claims instanceof Response) return claims;
 
-                const { name } = await req.json() as { name?: string };
-                if (!name) {
-                    return Response.json({ error: "Organization name is required." }, { status: 400, headers: corsHeaders });
+                const body = await parseBody<OrgRegisterBody>(req, corsHeaders);
+                if (body instanceof Response) return body;
+
+                const { name } = body;
+                if (!isNonEmptyString(name, 100)) {
+                    return Response.json({ error: "Organization name is required (max 100 chars)." }, { status: 400, headers: corsHeaders });
                 }
 
                 const [user] = await pg`SELECT id FROM users WHERE id = ${claims.sub} LIMIT 1`;
@@ -393,13 +523,16 @@ export const createServer = async () => {
                     RETURNING id, name, slug
                 `;
 
+                logger.info("Organization created", { orgId: org.id, slug });
                 return Response.json({ message: "Organization created successfully.", org }, { status: 201, headers: corsHeaders });
             },
 
 
             "/org/clients/register": async (req) => {
+                const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
                 if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin);
+
+                const claims = await verifyBearerToken(req, process.env.ISSUER_URL ?? server.url.origin, corsHeaders);
                 if (claims instanceof Response) return claims;
 
                 const [org] = await pg`SELECT id FROM organizations WHERE owner_user_id = ${claims.sub} LIMIT 1`;
@@ -407,9 +540,19 @@ export const createServer = async () => {
                     return Response.json({ error: "You don't own an organization." }, { status: 403, headers: corsHeaders });
                 }
 
-                const { client_name, redirect_uris } = await req.json() as any;
-                if (!client_name || !Array.isArray(redirect_uris) || redirect_uris.length === 0) {
+                const body = await parseBody<ClientRegisterBody>(req, corsHeaders);
+                if (body instanceof Response) return body;
+
+                const { client_name, redirect_uris } = body;
+                if (!isNonEmptyString(client_name, 100) || !Array.isArray(redirect_uris) || redirect_uris.length === 0) {
                     return Response.json({ error: "client_name and redirect_uris[] are required." }, { status: 400, headers: corsHeaders });
+                }
+
+                // Validate each redirect URI
+                for (const uri of redirect_uris) {
+                    try { new URL(uri); } catch {
+                        return Response.json({ error: `Invalid redirect URI: ${uri}` }, { status: 400, headers: corsHeaders });
+                    }
                 }
 
                 const clientSecret = generateSecret();
@@ -417,7 +560,7 @@ export const createServer = async () => {
 
                 // Bun's SQL client serialises JS arrays as plain strings, not PG array literals.
                 // Build {"url1","url2"} format explicitly and cast with ::text[].
-                const redirectUrisLiteral = toPostgresArray(redirect_uris as string[]);
+                const redirectUrisLiteral = toPostgresArray(redirect_uris);
 
                 const [client] = await pg`
                     INSERT INTO oidc_clients (organization_id, client_name, client_secret_hash, redirect_uris)
@@ -425,6 +568,7 @@ export const createServer = async () => {
                     RETURNING id, client_id AS "clientId", client_name AS "clientName"
                 `;
 
+                logger.info("OIDC client registered", { clientId: client.clientId, orgId: org.id });
                 return Response.json({
                     message: "Client registered. Save the client_secret — it won't be shown again.",
                     client_id: client.clientId,
@@ -436,17 +580,19 @@ export const createServer = async () => {
 
         },
 
-        error(error: any) {
-            console.error("[server error]", error);
+        error(error) {
+            const corsHeaders = buildCorsHeaders(null);
 
-            if (error.name === "PostgresError") {
+            if (error && typeof error === "object" && "name" in error && error.name === "PostgresError") {
+                logger.error("Database error", { message: String(error) });
                 return Response.json({ error: "Database error occurred." }, { status: 500, headers: corsHeaders });
             }
 
+            logger.error("Unhandled server error", { message: String(error) });
             return Response.json({ error: "Internal server error." }, { status: 500, headers: corsHeaders });
         },
     });
 
-    console.log("Server is running on", process.env.ISSUER_URL ?? server.url.origin);
+    logger.info("Server started", { url: process.env.ISSUER_URL ?? server.url.origin, port, env: process.env.NODE_ENV ?? "development" });
     return server;
 };
