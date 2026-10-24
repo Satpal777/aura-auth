@@ -20,4 +20,3 @@ certs
 *.pem
 frontend
 dist
-scripts
