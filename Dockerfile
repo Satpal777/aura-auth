@@ -20,6 +20,12 @@ COPY --chown=appuser:appgroup package.json bun.lock ./
 COPY --chown=appuser:appgroup index.ts ./
 COPY --chown=appuser:appgroup src ./src
 COPY --chown=appuser:appgroup public ./public
+COPY --chown=appuser:appgroup scripts ./scripts
+COPY --chown=appuser:appgroup docker-entrypoint.sh ./
+
+# Pre-create certs dir owned by appuser so key generation works
+RUN mkdir -p /app/certs && chown appuser:appgroup /app/certs && \
+    chmod +x docker-entrypoint.sh
 
 ENV NODE_ENV=production
 
@@ -27,4 +33,4 @@ EXPOSE 3000
 
 USER appuser
 
-CMD ["bun", "index.ts"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
